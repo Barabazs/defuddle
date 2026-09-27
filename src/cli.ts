@@ -19,6 +19,7 @@ export interface ParseOptions {
 	lang?: string;
 	userAgent?: string;
 	frontmatter?: boolean;
+	url?: string;
 }
 
 interface ParseResult {
@@ -65,6 +66,22 @@ export async function parseSource(source: string | undefined, options: ParseOpti
 
 	const usesStdin = !source || source === '-';
 	const isUrl = !usesStdin && (source.startsWith('http://') || source.startsWith('https://'));
+
+	if (options.url !== undefined) {
+		if (isUrl) {
+			throw new Error('--url is only for file or stdin input; the source is already a URL.');
+		}
+		let parsedUrl: URL | undefined;
+		try {
+			parsedUrl = new URL(options.url);
+		} catch {
+			// handled below
+		}
+		if (!parsedUrl || (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:')) {
+			throw new Error(`--url must be an absolute http(s) URL, got "${options.url}"`);
+		}
+		url = options.url;
+	}
 
 	if (usesStdin) {
 		if (input.isTTY) {
@@ -174,6 +191,7 @@ export function createProgram(): Command {
 		.option('--debug', 'Enable debug mode')
 		.option('-l, --lang <code>', 'Preferred language (BCP 47, e.g. en, fr, ja)')
 		.option('-u, --user-agent <string>', 'Custom User-Agent header for HTTP requests (helps with 403/FORBIDDEN responses)')
+		.option('--url <url>', 'Original page URL for file or stdin input (enables site-specific extractors and resolves relative links)')
 		.action(async (source: string | undefined, options: ParseOptions) => {
 			try {
 				const { output } = await parseSource(source, options);

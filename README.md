@@ -95,6 +95,9 @@ npx defuddle parse page.html --output result.html
 # Enable debug mode
 npx defuddle parse page.html --debug
 
+# Parse a saved page with its original URL (enables site-specific extractors, e.g. ChatGPT/Claude conversations)
+npx defuddle parse saved-chat.html --url https://claude.ai/chat/abc --markdown
+
 # Use a custom User-Agent (helps with sites that return 403 to the default UA)
 npx defuddle parse https://example.com/article --user-agent "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Safari/605.1.15"
 ```
@@ -112,6 +115,7 @@ npx defuddle parse https://example.com/article --user-agent "Mozilla/5.0 (Macint
 | `--debug` | | Enable debug mode |
 | `--lang <code>` | `-l` | Preferred language (BCP 47, e.g. `en`, `fr`, `ja`) |
 | `--user-agent <string>` | `-u` | Custom `User-Agent` header for HTTP requests (helps with 403/FORBIDDEN responses) |
+| `--url <url>` | | Original page URL for file or stdin input. Site-specific extractors are chosen by URL, so saved pages need this to use them |
 
 When no `<source>` argument is provided, `defuddle parse` reads HTML from stdin. You can also pass `-` explicitly to force stdin input.
 

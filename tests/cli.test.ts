@@ -96,6 +96,50 @@ describe('CLI parseSource', () => {
 		expect(option?.attributeName()).toBe('frontmatter');
 	});
 
+	describe('--url for saved pages', () => {
+		// Site extractors are selected by URL, which a saved page on disk lacks.
+		const savedChatHtml = `<!DOCTYPE html><html><head><title>Example chat - Claude</title></head><body>
+			<aside><p>Recent chats: first placeholder chat, second placeholder chat, third placeholder chat, fourth placeholder chat.</p></aside>
+			<main>
+				<div data-testid="user-message"><p>Placeholder user question</p></div>
+				<div class="font-claude-response"><div class="standard-markdown"><p>Placeholder assistant answer</p></div></div>
+			</main>
+		</body></html>`;
+
+		test('uses the site extractor for stdin input when --url is set', async () => {
+			const result = await parseSource(undefined, { url: 'https://claude.ai/chat/example', markdown: true }, createMockStdin(savedChatHtml));
+
+			// Author labels are only emitted by the conversation extractor.
+			expect(result.output).toContain('**You**');
+			expect(result.output).toContain('**Claude**');
+			expect(result.output).toContain('Placeholder user question');
+			expect(result.output).toContain('Placeholder assistant answer');
+			expect(result.output).not.toContain('Recent chats');
+		});
+
+		test('uses --url as the frontmatter source', async () => {
+			const result = await parseSource(undefined, { url: 'https://claude.ai/chat/example', frontmatter: true }, createMockStdin(savedChatHtml));
+
+			expect(result.output).toContain('source: "https://claude.ai/chat/example"');
+		});
+
+		test('rejects a non-http(s) --url', async () => {
+			await expect(parseSource(undefined, { url: 'claude.ai/chat/example' }, createMockStdin(savedChatHtml))).rejects.toThrow('--url');
+		});
+
+		test('rejects --url when the source is already a URL', async () => {
+			await expect(parseSource('https://example.com/', { url: 'https://claude.ai/chat/example' })).rejects.toThrow('--url');
+		});
+
+		test('registers the --url flag', () => {
+			const parseCommand = createProgram().commands.find((c) => c.name() === 'parse');
+			const option = parseCommand?.options.find((o) => o.long === '--url');
+
+			expect(option).toBeDefined();
+			expect(option?.attributeName()).toBe('url');
+		});
+	});
+
 	test('registers the --user-agent flag with a -u alias', () => {
 		const parseCommand = createProgram().commands.find((c) => c.name() === 'parse');
 		const option = parseCommand?.options.find((o) => o.long === '--user-agent');
